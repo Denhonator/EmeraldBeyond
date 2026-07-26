@@ -1,12 +1,10 @@
 ﻿using EmeraldBeyond;
-using Harmony;
 using Il2Cpp;
 using Il2CppBattle;
-using Il2CppInterop.Runtime.InteropTypes.Arrays;
-using Il2CppSystem.Reflection;
+using Il2CppInterop.Runtime;
+using Il2CppMessagePack;
 using Il2CppUI.CutScene;
 using MelonLoader;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 using static MelonLoader.MelonLogger;
 
@@ -360,6 +358,34 @@ class background
     }
 }
 
+[HarmonyLib.HarmonyPatch(typeof(CatheScript), "PreSaveContinue")]
+class SaveEdit2
+{
+    static void Postfix(ref Il2CppSystem.Collections.Generic.Dictionary<string, int> __result)
+    {
+        foreach(string key in MyMod.globalOverride.Keys)
+        {
+            if (__result.ContainsKey(key))
+            {
+                __result[key] = MyMod.globalOverride[key];
+                Msg($"Overriding {key} to {MyMod.globalOverride[key]} for save file");
+            }
+        }
+    }
+}
+
+[HarmonyLib.HarmonyPatch(typeof(CatheScript), "PostLoadContinue")]
+class SaveEdit3
+{
+    static void Postfix(ref Il2CppSystem.Collections.Generic.Dictionary<string, int> dict)
+    {
+        foreach (string key in dict.Keys)
+        {
+            Msg($"Load: {key} = {dict[key]}");
+        }
+    }
+}
+
 namespace EmeraldBeyond
 {
     public class MyMod : MelonMod
@@ -373,6 +399,7 @@ namespace EmeraldBeyond
         public static List<AgentCutScene> acs = new List<AgentCutScene>();
         public static Il2CppMakimono.InputManager im = null;
         public static int turboSetting = 0;
+        public static Dictionary<string, int> globalOverride = new Dictionary<string, int>();
 
         public static void SetTurbo(bool turboset)
         {
@@ -394,8 +421,20 @@ namespace EmeraldBeyond
                 {
                     if (s.Contains("turbo"))
                     {
-                        turboSetting = int.Parse(s.Substring(s.IndexOf("=")+1));
+                        turboSetting = int.Parse(s.Substring(s.IndexOf("=") + 1));
                         //Msg("Cutscene turbo set to " + (turboSetting == 0 ? "disallowed" : turboSetting == 1 ? "hold to use" : "automatic"));
+                    }
+                    else if(s.StartsWith("g"))
+                    {
+                        try
+                        {
+                            globalOverride[s.Substring(0, s.IndexOf("=")).Trim()] = int.Parse(s.Substring(s.IndexOf("=") + 1).Trim());
+                            Msg($"Global override: {s.Substring(0, s.IndexOf("=")).Trim()} = {int.Parse(s.Substring(s.IndexOf("=") + 1).Trim())}");
+                        }
+                        catch
+                        {
+                            Msg($"Failed to parse global override line: {s}");
+                        }
                     }
                 }
             }
@@ -442,13 +481,29 @@ namespace EmeraldBeyond
             }
             else if (Input.GetKeyDown(KeyCode.F5))
             {
+                Msg("Global:");
                 foreach (string key in cs.m_valGlobalDict.Keys)
                 {
                     Msg($"{key} = {cs.m_valGlobalDict[key].valInt}{cs.m_valGlobalDict[key].valBool}{cs.m_valGlobalDict[key].valString}");
                 }
+                Msg("Local:");
                 foreach (string key in cs.m_valLocalDict.Keys)
                 {
                     Msg($"{key} = {cs.m_valLocalDict[key].valInt}{cs.m_valLocalDict[key].valBool}{cs.m_valLocalDict[key].valString}");
+                }
+                Msg("Override:");
+                foreach (string key in globalOverride.Keys)
+                {
+                    if (cs == null)
+                    {
+                        cs = HarmonyLib.Traverse.Create(typeof(EventScript)).Field("s_script").GetValue<CatheScript>();
+                    }
+                    if (cs.m_valGlobalDict.ContainsKey(key))
+                    {
+                        Msg($"{key} = {cs.m_valGlobalDict[key].m_valFixed}{cs.m_valGlobalDict[key].valBool}{cs.m_valGlobalDict[key].valString}");
+                        cs.GlobalValSetAndLog(key, globalOverride[key]);
+                        Msg($"{key} Override = {cs.m_valGlobalDict[key].m_valFixed}{cs.m_valGlobalDict[key].valBool}{cs.m_valGlobalDict[key].valString}");
+                    }
                 }
             }
             else if (Input.GetKeyDown(KeyCode.PageUp) && Time.timeScale >= 1.0f && Time.timeScale < 5.0f)
@@ -458,11 +513,6 @@ namespace EmeraldBeyond
             else if (Input.GetKeyDown(KeyCode.PageDown))
             {
                 Time.timeScale = 1.0f;
-            }
-            else if (Input.GetKeyDown(KeyCode.F7))
-            {
-                foreach(AgentCutScene a in acs)
-                    Msg($"AgentCutScene ID: {a.unitid}\nCutscene open: {a.IsOpen}\nCutscene enabled: {a.Enable}");
             }
 #endif
             //if (Input.GetKeyDown(KeyCode.P))

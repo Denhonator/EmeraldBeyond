@@ -26,6 +26,9 @@
     <Reference Include="Il2CppMakimono">
       <HintPath>H:\SteamLibrary\steamapps\common\SaGaEmeraldBeyond\MelonLoader\Il2CppAssemblies\Il2CppMakimono.dll</HintPath>
     </Reference>
+    <Reference Include="Il2CppMessagePack">
+      <HintPath>H:\SteamLibrary\steamapps\common\SaGaEmeraldBeyond\MelonLoader\Il2CppAssemblies\Il2CppMessagePack.dll</HintPath>
+    </Reference>
     <Reference Include="Il2Cppmscorlib">
       <HintPath>H:\SteamLibrary\steamapps\common\SaGaEmeraldBeyond\MelonLoader\Il2CppAssemblies\Il2Cppmscorlib.dll</HintPath>
     </Reference>
@@ -34,6 +37,9 @@
     </Reference>
     <Reference Include="MelonLoader">
       <HintPath>H:\SteamLibrary\steamapps\common\SaGaEmeraldBeyond\MelonLoader\net6\MelonLoader.dll</HintPath>
+    </Reference>
+    <Reference Include="SaveManager">
+      <HintPath>H:\SteamLibrary\steamapps\common\SaGaEmeraldBeyond\MelonLoader\Dependencies\Il2CppAssemblyGenerator\Cpp2IL\cpp2il_out\SaveManager.dll</HintPath>
     </Reference>
     <Reference Include="Unity.TextMeshPro">
       <HintPath>H:\SteamLibrary\steamapps\common\SaGaEmeraldBeyond\MelonLoader\Il2CppAssemblies\Unity.TextMeshPro.dll</HintPath>
@@ -54,5 +60,9 @@
       <HintPath>H:\SteamLibrary\steamapps\common\SaGaEmeraldBeyond\MelonLoader\Il2CppAssemblies\UnityEngine.UI.dll</HintPath>
     </Reference>
   </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="copy $(TargetPath) H:\SteamLibrary\steamapps\common\SaGaEmeraldBeyond\Mods\EmeraldBeyond_QoL.dll" />
+  </Target>
 
 </Project>
