@@ -377,11 +377,19 @@ class SaveEdit2
 [HarmonyLib.HarmonyPatch(typeof(CatheScript), "PostLoadContinue")]
 class SaveEdit3
 {
-    static void Postfix(ref Il2CppSystem.Collections.Generic.Dictionary<string, int> dict)
+    static void Prefix(ref Il2CppSystem.Collections.Generic.Dictionary<string, int> dict)
     {
         foreach (string key in dict.Keys)
         {
             Msg($"Load: {key} = {dict[key]}");
+        }
+        foreach (string key in MyMod.globalOverride.Keys)
+        {
+            if (dict.ContainsKey(key))
+            {
+                dict[key] = MyMod.globalOverride[key];
+                Msg($"Overriding {key} to {MyMod.globalOverride[key]} for loaded file");
+            }
         }
     }
 }
